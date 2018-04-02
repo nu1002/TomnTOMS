@@ -3,13 +3,13 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x27, 16, 2);   //lcd주소 16칸 2줄 선언
+LiquidCrystal_I2C lcd(0x3F, 16, 2);   //lcd주소 16칸 2줄 선언
 
 //wifi 연결 변수
-char ssid[] = "밴재";   //wifi 이름
-char pass[] = "dmswo0922";  //wifi passwd
+char ssid[] = "jm";   //wifi 이름
+char pass[] = "11111111";  //wifi passwd
 String apiKey = "8RUOBK0AK028O9AD";
-char server[] = "waytech.kr";   //서버 주소
+char server[] = "api.thingspeak.com";   //서버 주소
 int status = WL_IDLE_STATUS;
 WiFiClient client;
 
@@ -40,35 +40,37 @@ void setup() {
   pinMode(led, OUTPUT);   //led핀 출력 설정
   pinMode(btn, INPUT);    //btn핀 입력 설정
 
+
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0,0);
-  lcd.print("eunjae babo");
-  lcd.setCursor(0,1);
-  lcd.print("nuri mungchung");
+  lcd.print("hello");
   wifiConnect();
-  printWifiStatus();
+  //printWifiStatus();
 }
 
-void loop() {
-  
+void loop() {  
   sensorDistance();
-  if(cm > 45){
+  if(cm > 40){
     getTime();
     lcd.setCursor(0,0);
     lcd.print("      use!      ");
     lcd.setCursor(0,1);
     lcd.print("CM= ");
     lcd.print(cm);
+  // sendThingspeak();
   }
   else{
+    time=millis();
+    digitalWrite(led, LOW);
+    lcd.setCursor(0,0);
     lcd.print("     empty!     ");
     lcd.setCursor(0,1);
-    lcd.print(" junmin is King ");
+    lcd.print("CM= ");
+    lcd.print(cm);
   }
-  sendThingspeak();
+  //sendThingspeak();
   // sendAllData();
-  delay(5000);
  
 }
 
@@ -108,7 +110,7 @@ void printWifiStatus() {
 
 void getTime(){ 
   currentTime =  millis() - time;
-  if(currentTime > 1000){
+  if(currentTime > 3000){
     digitalWrite(led,HIGH);
     Serial.print("time: ");
     Serial.println(time);
@@ -118,7 +120,8 @@ void getTime(){
     Serial.println(currentTime);
     Serial.print("millis()-time: ");
     Serial.println(millis()-time);
-    delay(100);
+
+
 
     if(digitalRead(btn) == HIGH){
       time=millis();
@@ -130,7 +133,8 @@ void getTime(){
       Serial.print("millis()-time: ");
       Serial.println(millis()-time);
       Serial.println("=============================");
-      delay(100);
+
+
     }
   }
   else
@@ -146,7 +150,6 @@ void sensorDistance(){
   float volts = (float)distance * VOLTS_PER_UNIT;   //저장한 값을 volt 단위로 변환
   cm = 60.495 * pow(volts,-1.1904);   //cm단위로 변환
 
-   delay(100);
 }
 
 void sendThingspeak(){
@@ -167,11 +170,12 @@ void sendThingspeak(){
     client.print(postStr);
 
     Serial.print("distance: ");
-    Serial.print(cm);
+    Serial.println(cm);
 
   }
-  client.stop();
-  Serial.println("Waiting…");
+  //client.stop();
+ //Serial.println("Waiting…");
+
 }
 
 void sendAllData(){
