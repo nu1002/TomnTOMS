@@ -2,6 +2,7 @@
 #include "WizFi250.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <TimerOne.h>
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);   //lcd주소 16칸 2줄 선언
 
@@ -9,22 +10,26 @@ LiquidCrystal_I2C lcd(0x3F, 16, 2);   //lcd주소 16칸 2줄 선언
 char ssid[] = "jm";   //wifi 이름
 char pass[] = "11111111";  //wifi passwd
 String apiKey = "8RUOBK0AK028O9AD";
-char server[] = "api.thingspeak.com";   //서버 주소
+char server[] = "waytech.kr";   //서버 주소
 int status = WL_IDLE_STATUS;
 WiFiClient client;
 
+volatile int state = LOW;
 
 //적외선 거리센서
-char ir = A0;   //사람 재실여부 확인하는 적외선 센서
-int distance;   //적외선 센서값 저장 변수
-float cm;   //적외선센서 측정값 cm으로 단위변환
+char ir1 = A0;   //사람 재실여부 확인하는 적외선 센서
+int distance1;   //적외선 센서값 저장 변수
+float cm1;   //적외선센서 측정값 cm으로 단위변환
 #define VOLTS_PER_UNIT    .0049F        // (.0049 for 10 bit A-D)
 
 
-int led = 12;   //장시간 이용시 점등하는 led
-int btn = 9;   //시간 초기화하는 버튼
-unsigned long time;   //시간 초기화하기 위한 변수
-unsigned long currentTime;    //사용시간 측정 변수
+int led1 = 7;   //장시간 이용시 점등하는 led
+int btn1 = 13;   //시간 초기화하는 버튼
+unsigned long time1;   //시간 초기화하기 위한 변수
+unsigned long currentTime1;    //사용시간 측정 변수
+
+unsigned long time0;
+unsigned long sendTime;
 
 
 void wifiConnect();    //WIFI 연결 함수
@@ -33,45 +38,93 @@ void getTime();   //시간 측정 함수
 void sensorDistance();  //거리 측정 함수(재실여부 확인)
 void sendThingspeak();   //서버로 측정 값 전송
 void sendAllData();
+void ledOn(){
+  if(currentTime1 > 3000){
+    digitalWrite(led1,HIGH);
+//    Serial.print("time: ");
+//    Serial.println(time);
+//    Serial.print("millis: ");
+//    Serial.println(millis());
+//    Serial.print("currentTime: ");
+//    Serial.println(currentTime1);
+//    Serial.print("millis()-time: ");
+//    Serial.println(millis()-time);
+    btnPush();
+
+  }
+  else
+  { 
+    digitalWrite(led1, LOW);
+  } 
+}
+
+void btnPush(){
+  
+    if(digitalRead(btn1) == HIGH){
+      time1=millis();
+      Serial.println("=============================");
+//      Serial.print("time: ");
+//      Serial.println(time);
+      Serial.print("currentTime: ");
+      Serial.println(currentTime1);
+//      Serial.print("millis()-time: ");
+//      Serial.println(millis()-time);
+      Serial.println("=============================");
+      delay(100);
+    }
+}
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  pinMode(led, OUTPUT);   //led핀 출력 설정
-  pinMode(btn, INPUT);    //btn핀 입력 설정
+  pinMode(led1, OUTPUT);   //led핀 출력 설정
+  pinMode(btn1, INPUT);    //btn핀 입력 설정
 
-
+  
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0,0);
   lcd.print("hello");
+ 
   wifiConnect();
+  Timer1.initialize(100000);
+
+  Timer1.attachInterrupt(btnPush);
+//  Timer1.attachInterrupt(ledOn);
+  
   //printWifiStatus();
+
 }
 
 void loop() {  
+  sendTime = millis() - time0;
+
   sensorDistance();
-  if(cm > 40){
-    getTime();
-    lcd.setCursor(0,0);
-    lcd.print("      use!      ");
-    lcd.setCursor(0,1);
-    lcd.print("CM= ");
-    lcd.print(cm);
-  // sendThingspeak();
+
+  if(cm1> 40){
+      getTime();
+      lcd.setCursor(0,0);
+      lcd.print("      use!      ");
+//    lcd.setCursor(0,1);
+//    lcd.print("CM= ");
+//    lcd.print(cm);
   }
   else{
-    time=millis();
-    digitalWrite(led, LOW);
+    time1=millis();
+    digitalWrite(led1, LOW);
     lcd.setCursor(0,0);
     lcd.print("     empty!     ");
-    lcd.setCursor(0,1);
-    lcd.print("CM= ");
-    lcd.print(cm);
+
   }
-  //sendThingspeak();
-  // sendAllData();
+
+  if(sendTime > 20000){
+    Serial.println(sendTime);
+    sendAllData();
+//    sendThingspeak();
+    time0 = millis();
+  }
  
+
 }
 
 void wifiConnect(){
@@ -88,7 +141,8 @@ void wifiConnect(){
     status = WiFi.begin(ssid,pass);
   }
 
-  Serial.println("Connected to wifi");
+  Serial.print("Connected to ");
+  Serial.println(ssid);
 }
 
 void printWifiStatus() {
@@ -109,54 +163,26 @@ void printWifiStatus() {
 }
 
 void getTime(){ 
-  currentTime =  millis() - time;
-  if(currentTime > 3000){
-    digitalWrite(led,HIGH);
-    Serial.print("time: ");
-    Serial.println(time);
-    Serial.print("millis: ");
-    Serial.println(millis());
-    Serial.print("currentTime: ");
-    Serial.println(currentTime);
-    Serial.print("millis()-time: ");
-    Serial.println(millis()-time);
-
-
-
-    if(digitalRead(btn) == HIGH){
-      time=millis();
-      Serial.println("=============================");
-      Serial.print("time: ");
-      Serial.println(time);
-      Serial.print("currentTime: ");
-      Serial.println(currentTime);
-      Serial.print("millis()-time: ");
-      Serial.println(millis()-time);
-      Serial.println("=============================");
-
-
-    }
-  }
-  else
-  { 
-    digitalWrite(led, LOW);
-  } 
+  currentTime1 =  millis() - time1;
+  ledOn();
 
 }
 
 
 void sensorDistance(){
-  distance = analogRead(ir);    //적외선센서 아날로그값 저장
-  float volts = (float)distance * VOLTS_PER_UNIT;   //저장한 값을 volt 단위로 변환
-  cm = 60.495 * pow(volts,-1.1904);   //cm단위로 변환
+  distance1 = analogRead(ir1);    //적외선센서 아날로그값 저장
+  float volts = (float)distance1 * VOLTS_PER_UNIT;   //저장한 값을 volt 단위로 변환
+  cm1 = 60.495 * pow(volts,-1.1904);   //cm단위로 변환
 
 }
 
 void sendThingspeak(){
-  if(client.connect(server, 80)){
+if(client.connect(server, 80)){
+    Serial.println("Connected to server!!");
+
     String postStr = apiKey;
     postStr += "&field1=";
-    postStr += String(cm);
+    postStr += String(cm1);
     postStr += "\r\n\r\n";
 
     client.print("POST /update HTTP/1.1\n");
@@ -170,8 +196,7 @@ void sendThingspeak(){
     client.print(postStr);
 
     Serial.print("distance: ");
-    Serial.println(cm);
-
+    Serial.println(cm1);
   }
   //client.stop();
  //Serial.println("Waiting…");
@@ -183,7 +208,7 @@ void sendAllData(){
     Serial.println("Connected...");
     client.print("GET /iot.php?"); //읽을 PHP 파일
     client.print("cm= ");
-    client.print(cm);
+    client.print(cm1);
     /* 거리센서 말고 보낼데이터 또 있으면 추가
     client.print("&&");
     client.print("temperature=");   
@@ -197,7 +222,7 @@ void sendAllData(){
     client.stop();
 
     Serial.print("cm= ");
-    Serial.println(cm);
+    Serial.println(cm1);
     }
     else{
       Serial.println("Connection failed");  
