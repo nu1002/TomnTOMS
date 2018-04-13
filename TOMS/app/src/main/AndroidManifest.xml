@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="kr.ac.kpu.toms">
+
+    <!-- 인터넷 사용을 위한 퍼미션 추가 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyB5F5vcy0XJqMpUGZmkdBlqo347UfGy4Qg" />
+
+        <activity android:name=".MainActivity" />
+        <activity android:name=".IntroActivity" />
+        <activity
+            android:name=".CurrentActivity"
+            android:label="TOMS"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".menu_write"
+            android:label="내가 쓴 글 보기" />
+        <activity
+            android:name=".menu_review"
+            android:label="화장실 사용 후기" />
+        <activity
+            android:name=".menu_wrong"
+            android:label="시설물 고장 신청" />
+        <activity
+            android:name=".menu_qa"
+            android:label="Q&amp;A" />
+        <activity
+            android:name=".menu_infor"
+            android:label="개발자 정보" />
+        <activity android:name=".ListViewItem" />
+        <activity android:name=".listViewTestActivity" />
+        <activity android:name=".WebViewTestActivity"></activity>
+    </application>
+
+</manifest>

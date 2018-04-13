@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/write_current"
+            android:icon="@drawable/write_current"
+            android:title="내가 쓴 글 보러가기" />
+        <item
+            android:id="@+id/review_current"
+            android:icon="@drawable/review_current"
+            android:title="화장실 사용 후기" />
+        <item
+            android:id="@+id/wrong_current"
+            android:icon="@drawable/wrong_current"
+            android:title="시설물 고장 신청" />
+        <item
+            android:id="@+id/qa_current"
+            android:icon="@drawable/qa_current"
+            android:title="Q&amp;A" />
+        <item
+            android:id="@+id/infor_current"
+            android:icon="@drawable/infor_current"
+            android:title="개발자 정보" />
+    </group>
+
+</menu>
