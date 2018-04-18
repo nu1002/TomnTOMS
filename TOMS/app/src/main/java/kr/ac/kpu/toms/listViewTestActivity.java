@@ -20,6 +20,9 @@ public class listViewTestActivity extends AppCompatActivity {
        listView = (ListView)findViewById(R.id.listview1);
        listView.setAdapter(adapter);
 
-       adapter.addItem(ContextCompat.getDrawable(this, R.drawable.profile_blank), "타이틀", "본문");
+       for(int i=0; i<10; i++){
+           adapter.addItem(ContextCompat.getDrawable(this, R.drawable.profile_blank), "타이틀"+i, "본문"+i);
+       }
+
     }
 }
