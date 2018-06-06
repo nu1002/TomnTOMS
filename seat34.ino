@@ -10,7 +10,6 @@ LiquidCrystal_I2C lcd2(0x27, 16, 2);   //lcd주소 16칸 2줄 선언
 //wifi 연결 변수
 char ssid[] = "jm";   //wifi 이름
 char pass[] = "11111111";  //wifi passwd
-String apiKey = "8RUOBK0AK028O9AD";
 char server[] = "waytech.kr";   //서버 주소 api.thingspeak.com  waytech.kr
 int status = WL_IDLE_STATUS;
 WiFiClient client;
@@ -24,7 +23,7 @@ int distance1;   //적외선 센서값 저장 변수
 int distance2;
 float cm1;   //적외선센서 측정값 cm으로 단위변환
 float cm2;
-#define VOLTS_PER_UNIT    .0049F        // (.0049 for 10 bit A-D)
+#define VOLTS_PER_UNIT    .0049F        // (.0049 for 10 bit A-D),,
 
 int seatState1;
 int seatState2;
@@ -46,6 +45,14 @@ unsigned long currentTime2;
 unsigned long time0;    //서버로 보낼 시간 측정
 unsigned long sendTime;
 
+int cLed1 = 5;  //화장지 잔량확인용 led
+int cLed2 = 6; 
+int cds1 = A2;  //화장지 잔량확인용 led 감지용 센서
+int cds2 = A3;
+int cdsValue1;
+int cdsValue2;
+int tissueState1;
+int tissueState2; 
 //한글설정 헤더파일로 만들고싶다
 //사
 byte newChar1[8] = {
@@ -153,17 +160,11 @@ void korean(){
   lcd2.createChar(5, newChar6);
   lcd2.createChar(6, newChar7);
 }
-void changeTime(){
-  seatTime1=currentTime1/1000;
-  seatTime2=currentTime2/1000;
 
-  Serial.println(seatTime1);
-  Serial.println(seatTime2);
-}
 void lcd1UseChar(){
 
-   lcd1.setCursor(4,0);
-   lcd1.print(" ");
+   lcd1.setCursor(0,0);
+   lcd1.print("     ");
    lcd1.write(0);
    lcd1.print(" ");
    lcd1.write(1);
@@ -174,7 +175,8 @@ void lcd1UseChar(){
 }
 void lcd1EptChar(){
 
-   lcd1.setCursor(4,0);
+   lcd1.setCursor(0,0);
+   lcd1.print("    ");
    lcd1.write(3);
    lcd1.print(" ");
    lcd1.write(4);
@@ -185,8 +187,8 @@ void lcd1EptChar(){
 }
 void lcd2UseChar(){
 
-   lcd2.setCursor(4,0);
-   lcd2.print(" ");
+   lcd2.setCursor(0,0);
+   lcd2.print("     ");
    lcd2.write(0);
    lcd2.print(" ");
    lcd2.write(1);
@@ -197,7 +199,8 @@ void lcd2UseChar(){
 }
 void lcd2EptChar(){
 
-   lcd2.setCursor(4,0);
+   lcd2.setCursor(0,0);
+   lcd2.print("    ");
    lcd2.write(3);
    lcd2.print(" ");
    lcd2.write(4);
@@ -205,6 +208,31 @@ void lcd2EptChar(){
    lcd2.write(5);
    lcd2.print(" ");
    lcd2.write(6);
+}
+
+void tissue(){
+  digitalWrite(cLed1, HIGH);
+  digitalWrite(cLed2, HIGH);
+
+  int cdsValue1 = analogRead(cds1);
+  int cdsValue2 = analogRead(cds2);
+
+  if(cdsValue1 > 600){
+    tissueState1 = 2;
+  }
+  else if(cdsValue1 > 400){
+    tissueState1 = 1;
+  }
+  else tissueState1 = 0;
+
+
+  if(cdsValue2 > 600){
+    tissueState2 = 2;
+  }
+  else if(cdsValue2 > 400){
+    tissueState2 = 1;
+  }
+  else tissueState2 = 0;
 }
 void setup() {
   // put your setup code here, to run once:
@@ -232,7 +260,6 @@ void setup() {
   Timer1.attachInterrupt(btnPush);
 //  Timer1.attachInterrupt(ledOn);
   
-  //printWifiStatus();
 
 }
 
@@ -241,37 +268,18 @@ void loop() {
   sendTime = millis() - time0;  //서버로 측정값 시간초기화
 
   sensorDistance();   //거리측정 및 측정거리 cm으로 변환
+  tissue();
 
   if(cm1 < 40){
       getTime();
-      lcd1.setCursor(0,0);
-    lcd1.print("    ");
-        lcd1.setCursor(4,0);
-   lcd1.print(" ");
-   lcd1.write(0);
-   lcd1.print(" ");
-   lcd1.write(1);
-   lcd1.print(" ");
-   lcd1.write(2);
-   lcd1.print(" ");
+      lcd1UseChar();
   }
   else{
     time1=millis();
     currentTime1=0;
     digitalWrite(led1, LOW);
-    lcd1.setCursor(0,0);
-    lcd1.print("    ");
-    lcd1.setCursor(4,0);
-   lcd1.write(3);
-   lcd1.print(" ");
-   lcd1.write(4);
-   lcd1.print(" ");
-   lcd1.write(5);
-   lcd1.print(" ");
-   lcd1.write(6);
-
+    lcd1EptChar();
   }
-  
   
   if(cm2 < 40){
       getTime();
@@ -286,11 +294,8 @@ void loop() {
   }
   
   if(sendTime > 20000){   //일정 시간이 되면 서버로 값 전송
-
-   // changeTime();
     seatState();
     sendAllData();
-//    sendThingspeak();
     time0 = millis();
     
     
@@ -315,30 +320,12 @@ void wifiConnect(){
   Serial.println(ssid);
 }
 
-void printWifiStatus() {
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi); 
-  Serial.println(" dBm");
-}
-
 void getTime(){ 
   currentTime1 =  millis() - time1;
   currentTime2 =  millis() - time2;
   ledOn();
 
 }
-
 
 void sensorDistance(){
   distance1 = analogRead(ir1);    //적외선센서 아날로그값 저장
@@ -424,34 +411,6 @@ void seatState(){
   }
 }
 
-void sendThingspeak(){
-if(client.connect(server, 80)){
-    Serial.println("Connected to server!!");
-
-    String postStr = apiKey;
-    postStr += "&field1=";
-    postStr += String(cm1);
-    postStr += "&field2=";
-    postStr += String(cm2);
-    postStr += "\r\n\r\n";
-
-    client.print("POST /update HTTP/1.1\n");
-    client.print("Host: api.thingspeak.com\n");
-    client.print("Connection: close\n");
-    client.print("X-THINGSPEAKAPIKEY: " + apiKey + "\n");
-    client.print("Content-Type: application/x-www-form-urlencoded\n");
-    client.print("Content-Length: ");
-    client.print(postStr.length());
-    client.print("\n\n");
-    client.print(postStr);
-
-    Serial.println(cm1);
-    Serial.println(cm2);
-  }
-  //client.stop();
- //Serial.println("Waiting…");
-
-}
 
 void sendAllData(){
   if (client.connect(server, 80)) {
@@ -467,6 +426,12 @@ void sendAllData(){
     client.print("&&");
     client.print("seatState4=");
     client.print(seatState2);
+    client.print("&&");
+    client.print("tissueState3=");
+    client.print(tissueState1);
+    client.print("&&");
+    client.print("tissueState4=");
+    client.print(tissueState2);
     /* 거리센서 말고 보낼데이터 또 있으면 추가
     client.print("&&");
     client.print("temperature=");   
